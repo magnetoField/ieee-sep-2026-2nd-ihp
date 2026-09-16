@@ -13,7 +13,7 @@
 
   "//": "PL_TARGET_DENSITY_PCT - You can increase this if Global Placement fails with error GPL-0302.",
   "//": "Users have reported that values up to 80 worked well for them.",
-  "PL_TARGET_DENSITY_PCT": 60,
+  "PL_TARGET_DENSITY_PCT": 85,
 
   "//": "CLOCK_PERIOD - Increase this in case you are getting setup time violations.",
   "//": "The value is in nanoseconds, so 20ns == 50MHz.",
@@ -22,6 +22,15 @@
   "//": "Hold slack margin - Increase them in case you are getting hold violations.",
   "PL_RESIZER_HOLD_SLACK_MARGIN": 0.1,
   "GRT_RESIZER_HOLD_SLACK_MARGIN": 0.05,
+
+  "//": "CTS_SINK_BUFFER_MAX_CAP_DERATE_PCT - halves the cap budget CTS gives a",
+  "//": "leaf buffer, so it clusters ~5 flops per leaf instead of ~14 and picks",
+  "//": "sg13g2_buf_2 (9.07 um2) over sg13g2_buf_8 (23.59 um2). 38 small leaves",
+  "//": "cost slightly less silicon than 15 large ones, which is why this fits",
+  "//": "where CTS_SINK_CLUSTERING_SIZE=8 does not - that keeps the big buffer",
+  "//": "and dies at DPL-0036 in hold repair. Clears every max-fanout violation",
+  "//": "for +98 um2, with both slacks and power unchanged.",
+  "CTS_SINK_BUFFER_MAX_CAP_DERATE_PCT": 50,
 
   "//": "RUN_LINTER, LINTER_INCLUDE_PDK_MODELS - Disabling the linter is not recommended!",
   "RUN_LINTER": 1,
@@ -39,7 +48,13 @@
 
   "//": "Save some time",
   "RUN_KLAYOUT_XOR": 0,
-  "RUN_KLAYOUT_DRC": 0,
+
+  "//": "Second-opinion DRC signoff. The TT default leaves this off to save",
+  "//": "runtime, which means Magic is the only DRC deck that runs. The",
+  "//": "ihp-sg13g2 PDK does ship a KLayout deck (KLAYOUT_DRC_RUNSET ->",
+  "//": "libs.tech/klayout/tech/drc/ihp-sg13g2.drc), so enabling this is a real",
+  "//": "independent check rather than a skipped step.",
+  "RUN_KLAYOUT_DRC": 1,
 
   "//": "Don't put clock buffers on the outputs",
   "DESIGN_REPAIR_BUFFER_OUTPUT_PORTS": 0,
@@ -62,6 +77,23 @@
 
   "//": "Clock",
   "RUN_CTS": 1,
+
+  "//": "CTS_SINK_CLUSTERING_SIZE is deliberately left unset (TritonCTS then",
+  "//": "uses its own default of 20 sinks per leaf cluster). Setting it to 8",
+  "//": "does clear the max-fanout rule, but this tile cannot afford it: leaf",
+  "//": "buffers go 14 -> 29 and clock-cell area ~600 -> 1254 um2, and after the",
+  "//": "usual +20% hold repair OpenROAD.ResizerTimingPostCTS dies with DPL-0036",
+  "//": "(detailed placement failed, 4 instances unplaceable).",
+  "//": "",
+  "//": "CTS_SINK_BUFFER_MAX_CAP_DERATE_PCT above is the fix that does fit, and",
+  "//": "the fanout violations are now 0 rather than tolerated. An earlier",
+  "//": "version of this comment called them cosmetic; they were not worth",
+  "//": "shipping once a fix existed that costs 98 um2.",
+  "//": "",
+  "//": "MAX_FANOUT_CONSTRAINT cannot be used to escape the rule: OpenSTA takes",
+  "//": "min(SDC, liberty) and the liberty sets default_max_fanout: 8, so",
+  "//": "raising it leaves the flow output byte-identical. Clock nets are also",
+  "//": "outside repair_design's remit, which is why CTS is the only lever.",
 
   "//": "Don't generate power rings",
   "FP_PDN_MULTILAYER": 0,

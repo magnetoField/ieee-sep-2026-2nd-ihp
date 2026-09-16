@@ -1,0 +1,41 @@
+# Coverage waivers for scripts/coverage.sh, applied by scripts/cov_waive.py.
+#
+# A waiver removes points that CANNOT be reached at the named build's
+# parameters and weights. It is not a way to hide a missing test: every line
+# here carries the proof, and the script fails if a waiver no longer removes
+# an uncovered point, because then the code under it has changed and the
+# proof with it. The raw number is always printed beside the waived one.
+#
+# Format:  builds :: types :: regex :: reason   (separator is ' :: ', so '|' is free for alternation)
+#   builds  all, or a comma list of drone,sheila
+#   types   all, or a comma list of line,branch,expr,toggle
+#   regex   Python regex matched against "<type> <point> @ <source line>",
+#           e.g. "toggle uio_oe[3]:1->0 @ output wire [7:0] uio_oe,"
+#                "branch cond_else @ fv = (b < NBAND) ? fmax[b]"
+#                "expr (w2c[0]==0) => 0 @ w2c[0] ? (w2c[1] ? (~hval_s + 1'b1) : hval_s) : '0;"
+#           Matching on the source text, not the line number, so an edit above
+#           the point does not silently detach the waiver from it.
+
+# --- switched off by a parameter (both builds ship the same values) -------
+all :: all :: favg|avg_nx|AVG_N > |AVG_STG0|TAP0 \+ NBAND\)\) begin|\(b < NBAND\) :: AVG_N=0: no frame-mean path. NFEAT==NBAND, so the else arm of (b < NBAND) reads a ring that is never written; favg and avg_nx are removed by synthesis.
+all :: line :: MANT == 0 :: MANT=1: the mantissa-free branch of the log encoder.
+all :: toggle :: ^toggle uio_oe\[ :: DEBUG_PINS=1: uio_oe is the constant 8'hFF (g_dbg).
+
+# --- unreachable by construction ---------------------------------------
+all :: line :: default: st <= S_IDLE :: st is 2 bits and S_IDLE..S_ROLL name all four encodings; the default arm has no value to take.
+all :: toggle :: ^toggle x_in\[[0-7]\]: :: x_in is pdm_bit ? +IN_AMP : -IN_AMP, two constants: +128 = 00_1000_0000 and -128 = 11_1000_0000 differ only in bits 9..8, bits 6..0 are 0 in both and bit 7 is 1 in both. Bits 9..8 stay in the count.
+all :: toggle :: ^toggle bmag\[[89]\]|^toggle bexp\[4\] :: |band| <= 192: the state stays in [-128,127] (from 0, s + ((128-s)>>>2) never reaches 128), the input is a state or x_in = +-128, so d = in-st is in [-255,256] and band = d - (d>>>2) peaks at 192; bmag < 256 and bexp <= 8.
+all :: branch,expr :: wide > 9'\(FEAT_MAX\) :: bexp <= 8 (above) and MANT=1 give wide = ((bexp-1)<<1)|m <= 15 = FEAT_MAX; the saturate arm cannot fire.
+all :: branch :: cond_then @ .*\|hsh\[HACC_W-1:4\] :: HACC_W=6, HSHIFT=1: acc_next <= 31, so hsh <= 15 whenever acc_next is non-negative and the clamp-to-15 arm is dead; negative goes to 0 in the outer arm.
+all :: toggle :: ^toggle hval_s\[[456]\] :: hval_s is a 4-bit unsigned hval zero-extended to OSUM_W=7; bits 6..4 are wired 0.
+all :: toggle :: ^toggle trim\[[01]\] :: trim is trim8 <<< 2; bits 1..0 are wired 0.
+all :: expr :: \[0\]==1.*_unused :: the 1'b0 term of the _unused sink is a literal; it is there to keep the AND from folding to ena.
+all :: line,branch,expr :: @ .*\bassert \( :: the WW_ASSERT checkers are verification code, not the design; their failure arms are unreachable by construction and their pass arms are not design coverage.
+
+# --- fixed by the weight headers and per-build geometry --------------------
+drone,sheila :: branch,expr,toggle :: ^toggle w2c\[0\]:|^expr \(w2c\[0\]==0\)|^branch cond_else @ .*w2c\[0\] \? :: WW_W2 is 8'hfd (drone) and 8'hdf (sheila): all four output weights are non-zero in both, so w2c[0] is always 1 and the zero-weight arm never runs.
+drone,sheila :: toggle :: ^toggle thresh\[[01]\]: :: WW_THRESH_PK=14 in both headers and trim is a multiple of 4, so thresh == 2 mod 4: bit 0 is wired 0 and bit 1 wired 1.
+drone :: toggle :: ^toggle hb\[3\]: :: WW_HBIAS = [8,-2,-1,9] as 6-bit two's complement all have bit 3 set.
+sheila :: toggle :: ^toggle hb\[[1-5]\]: :: WW_HBIAS = [0,1,0,0]: no bias has a bit above bit 0 set.
+sheila :: toggle :: ^toggle uio_out\[3\]: :: NFRAME=8 makes frame_idx 3 bits wide, and 4'(frame_idx) on uio_out[3:0] wires bit 3 to 0. (The drone's NFRAME=16 uses all four.)
+drone :: expr :: \(stg < \(TAP0 \+ NBAND\)\[3:0\]\)==0 :: TAP0+NBAND = 9 = NSTAGE and stg runs 0..8 in S_CASC, so the upper bound of is_tap is never the deciding term. (Sheila's TAP0=3 leaves it live.)

@@ -1,38 +1,54 @@
 `default_nettype none
 `timescale 1ns / 1ps
 
-/* This testbench just instantiates the module and makes some convenient wires
-   that can be driven / tested by the cocotb test.py.
-*/
+// Parameter overrides come in as +defines; iverilog's -P silently no-ops here.
+// Defaults are the shipped RTL parameters; the Makefile shortens FRAME_LOG2
+// for the fast RTL run. The gate-level netlist has no parameters, so under
+// GL_TEST the design is instantiated as-is and must be the full-rate build.
+`ifndef WW_FRAME_LOG2
+  `define WW_FRAME_LOG2 16
+`endif
+// All drone geometry other than the shortened RTL frame is left at the exact
+// tape-out defaults.
+
+/* Testbench wrapper for tt_um_hyphen133_drone_detection. */
 module tb ();
 
-  // Dump the signals to a FST file. You can view it with gtkwave or surfer.
+  // Waveforms for the RTL runs only: dumping every net of the gate-level
+  // netlist at the full frame length writes tens of GB and dominates runtime.
+`ifndef GL_TEST
   initial begin
     $dumpfile("tb.fst");
     $dumpvars(0, tb);
     #1;
   end
+`endif
 
-  // Wire up the inputs and outputs:
-  reg clk;
-  reg rst_n;
-  reg ena;
-  reg [7:0] ui_in;
-  reg [7:0] uio_in;
+  reg        clk;
+  reg        rst_n;
+  reg        ena;
+  reg  [7:0] ui_in;
+  reg  [7:0] uio_in;
   wire [7:0] uo_out;
   wire [7:0] uio_out;
   wire [7:0] uio_oe;
 
-  // Replace tt_um_example with your module name:
-  tt_um_example user_project (
-      .ui_in  (ui_in),    // Dedicated inputs
-      .uo_out (uo_out),   // Dedicated outputs
-      .uio_in (uio_in),   // IOs: Input path
-      .uio_out(uio_out),  // IOs: Output path
-      .uio_oe (uio_oe),   // IOs: Enable path (active high: 0=input, 1=output)
-      .ena    (ena),      // enable - goes high when design is selected
-      .clk    (clk),      // clock
-      .rst_n  (rst_n)     // not reset
+`ifdef GL_TEST
+  // The IHP flow emits an unpowered netlist (no VPWR/VGND ports).
+  tt_um_hyphen133_drone_detection user_project (
+`else
+  tt_um_hyphen133_drone_detection #(
+      .FRAME_LOG2(`WW_FRAME_LOG2)
+  ) user_project (
+`endif
+      .ui_in  (ui_in),
+      .uo_out (uo_out),
+      .uio_in (uio_in),
+      .uio_out(uio_out),
+      .uio_oe (uio_oe),
+      .ena    (ena),
+      .clk    (clk),
+      .rst_n  (rst_n)
   );
 
 endmodule
