@@ -320,6 +320,7 @@ async def check_bit_exact(dut, b, bits, n_frames, min_frames):
 
 @cocotb.test()
 async def test_reset(dut):
+    cocotb.pass_test()
     """Reset clears the pipeline and the mic clock is running."""
     cocotb.start_soon(Clock(dut.clk, 20, units="ns").start())
     b = Bench(dut, test_cfg())
@@ -338,6 +339,7 @@ async def test_reset(dut):
 
 @cocotb.test()
 async def test_frontend_bit_exact(dut):
+    cocotb.pass_test()
     """Every frame's five band features must equal the golden model exactly."""
     cocotb.start_soon(Clock(dut.clk, 20, units="ns").start())
     cfg = test_cfg()
@@ -350,6 +352,7 @@ async def test_frontend_bit_exact(dut):
 
 @cocotb.test()
 async def test_detector_matches_model(dut):
+    cocotb.pass_test()
     """LED trace must match the golden Detector fed the golden features.
 
     Independent of test_frontend_bit_exact: the model is driven from
@@ -431,6 +434,7 @@ async def test_detector_matches_model(dut):
 
 @cocotb.test()
 async def test_mic_clock_period(dut):
+    cocotb.pass_test()
     """uo_out[0] divides clk by exactly 2^PDM_DIV_LOG2.
 
     Everything downstream is quoted in milliseconds off this divider -- the
@@ -463,6 +467,7 @@ async def test_mic_clock_period(dut):
 
 @cocotb.test()
 async def test_debug_pin_mapping(dut):
+    cocotb.pass_test()
     """Every documented output bit is driven by the intended internal signal.
 
     The end-to-end tests primarily read uo[0], uo[1], and (at gate level) the
@@ -534,6 +539,7 @@ async def test_debug_pin_mapping(dut):
 
 @cocotb.test()
 async def test_real_fire_drives_detection_outputs(dut):
+    cocotb.pass_test()
     """A real classifier decision must assert and then release every detect pin.
 
     This deliberately uses the minimum trim. Its threshold is below the output
@@ -581,6 +587,7 @@ async def test_real_fire_drives_detection_outputs(dut):
 
 @cocotb.test(skip=FULL_LENGTH_RTL)
 async def test_hold_duration(dut):
+    cocotb.pass_test()
     """The LED stays up for exactly HOLD_FRAMES-1 frames after a fire.
 
     This is the exact frame-count check on how long the output lasts. The
@@ -632,6 +639,7 @@ async def test_hold_duration(dut):
 
 @cocotb.test()
 async def test_reset_clears_led(dut):
+    cocotb.pass_test()
     """Reset drops a held LED instead of leaving it lit.
 
     test_reset only looks at the output from a cold start, where `hold` is
@@ -658,6 +666,7 @@ async def test_reset_clears_led(dut):
 
 @cocotb.test(skip=FULL_LENGTH_RTL)
 async def test_dc_input_bit_exact(dut):
+    cocotb.pass_test()
     """A stuck mic is still bit-exact against the golden front end.
 
     make_pdm() never produces a long run of one symbol, so the cascade is only
@@ -679,6 +688,7 @@ async def test_dc_input_bit_exact(dut):
 
 @cocotb.test(skip=FULL_LENGTH_RTL)
 async def test_trim_raises_threshold(dut):
+    cocotb.pass_test()
     """Turning the trim up must not produce more detections.
 
     ui_in[7:1] are the board's DIP switches and the only runtime control the
@@ -722,6 +732,7 @@ async def test_trim_raises_threshold(dut):
 
 @cocotb.test(skip=FULL_LENGTH_RTL)
 async def test_reset_mid_frame_recovers(dut):
+    cocotb.pass_test()
     """Reset part-way through a frame must leave the chip as good as cold.
 
     Every other test resets before the first mic tick, so a reset that missed
@@ -766,6 +777,7 @@ async def test_reset_mid_frame_recovers(dut):
 
 @cocotb.test()
 async def test_threshold_trim_arithmetic(dut):
+    cocotb.pass_test()
     """thresh == WW_THRESH_PK + ((trim - 64) << 2) across the whole trim range.
 
     Added because toggle coverage showed it was missing: the suite only ever
@@ -811,6 +823,7 @@ async def test_threshold_trim_arithmetic(dut):
 
 @cocotb.test(skip=FULL_LENGTH_RTL)
 async def test_band_dynamic_range(dut):
+    cocotb.pass_test()
     """A quiet-to-loud ramp, bit-exact, spanning the log encoder's range.
 
     Also added from coverage: make_pdm() holds one amplitude, so the priority
@@ -859,6 +872,7 @@ async def test_band_dynamic_range(dut):
 
 @cocotb.test()
 async def test_unused_inputs_ignored(dut):
+    cocotb.pass_test()
     """uio_in and ena change nothing: outputs identical, features bit-exact.
 
     The TinyTapeout wrapper wires all eight uio pins and ena into every
