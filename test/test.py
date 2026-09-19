@@ -318,7 +318,7 @@ async def check_bit_exact(dut, b, bits, n_frames, min_frames):
     dut._log.info(f"{n} frames bit-exact; example {got[min(3, n-1)]}")
 
 
-@cocotb.test(skip=true)
+@cocotb.test(skip=True)
 async def test_reset(dut):
   
     
@@ -338,7 +338,7 @@ async def test_reset(dut):
     dut._log.info(f"mic clock: {edges} edges in {4*PDM_DIV} clk (expect ~8)")
 
 
-@cocotb.test(skip=true)
+@cocotb.test(skip=True)
 async def test_frontend_bit_exact(dut):
     
     """Every frame's five band features must equal the golden model exactly."""
@@ -351,7 +351,7 @@ async def test_frontend_bit_exact(dut):
     await check_bit_exact(dut, b, bits, NFRAMES_RUN, min_frames=4)
 
 
-@cocotb.test(skip=true)
+@cocotb.test(skip=True)
 async def test_detector_matches_model(dut):
     
     """LED trace must match the golden Detector fed the golden features.
@@ -433,7 +433,7 @@ async def test_detector_matches_model(dut):
                   f"{len(det.fired)} window(s) fired")
 
 
-@cocotb.test(skip=true)
+@cocotb.test(skip=True)
 async def test_mic_clock_period(dut):
     
     """uo_out[0] divides clk by exactly 2^PDM_DIV_LOG2.
@@ -466,7 +466,7 @@ async def test_mic_clock_period(dut):
                   f"tape-out frame {TAPEOUT_FRAME_MS:.2f} ms")
 
 
-@cocotb.test(skip=true)
+@cocotb.test(skip=True)
 async def test_debug_pin_mapping(dut):
     
     """Every documented output bit is driven by the intended internal signal.
@@ -538,7 +538,7 @@ async def test_debug_pin_mapping(dut):
     await check_snapshot(div=PDM_DIV // 2, hold=0, fmax0=0x3, state=3, frame=0x5)
 
 
-@cocotb.test(skip=true)
+@cocotb.test(skip=True)
 async def test_real_fire_drives_detection_outputs(dut):
     
     """A real classifier decision must assert and then release every detect pin.
@@ -586,7 +586,7 @@ async def test_real_fire_drives_detection_outputs(dut):
     assert saw_high, "guaranteed-low threshold never produced a real classifier fire"
     assert saw_release, "detection outputs did not release after the configured hold"
 
-@cocotb.test(skip=true)
+@cocotb.test(skip=True)
 async def test_hold_duration(dut):
     
     """The LED stays up for exactly HOLD_FRAMES-1 frames after a fire.
@@ -638,7 +638,7 @@ async def test_hold_duration(dut):
     dut._log.info(f"LED holds {frames} frame(s) = "
                   f"{frames * TAPEOUT_FRAME_MS:.1f} ms at the tape-out frame length")
 
-@cocotb.test(skip=true)
+@cocotb.test(skip=True)
 async def test_reset_clears_led(dut):
     
     """Reset drops a held LED instead of leaving it lit.
@@ -665,7 +665,7 @@ async def test_reset_clears_led(dut):
     assert (int(dut.uo_out.value) >> 1) & 0b111 == 0, "a detection survived reset"
     dut._log.info("reset clears the hold counter")
 
-@cocotb.test(skip=true)
+@cocotb.test(skip=True)
 async def test_dc_input_bit_exact(dut):
     """A stuck mic is still bit-exact against the golden front end.
 
@@ -686,7 +686,7 @@ async def test_dc_input_bit_exact(dut):
         dut._log.info(f"--- mic {name} ---")
         await check_bit_exact(dut, b, bits, n_frames, min_frames=3)
 
-@cocotb.test(skip=true)
+@cocotb.test(skip=True)
 async def test_trim_raises_threshold(dut):
     
     """Turning the trim up must not produce more detections.
@@ -730,7 +730,7 @@ async def test_trim_raises_threshold(dut):
         f"trim is not monotonic: {fires}"
     assert counts[0] > 0, "no detection at the lowest trim -- stimulus too weak to test"
 
-@cocotb.test(skip=true)
+@cocotb.test(skip=True)
 async def test_reset_mid_frame_recovers(dut):
     
     """Reset part-way through a frame must leave the chip as good as cold.
@@ -775,7 +775,7 @@ async def test_reset_mid_frame_recovers(dut):
     bits = make_pdm(n_frames << cfg.frame_log2, cfg)
     await check_bit_exact(dut, b, bits, n_frames, min_frames=3)
 
-@cocotb.test(skip=true)
+@cocotb.test(skip=True)
 async def test_threshold_trim_arithmetic(dut):
     
     """thresh == WW_THRESH_PK + ((trim - 64) << 2) across the whole trim range.
@@ -821,7 +821,7 @@ async def test_threshold_trim_arithmetic(dut):
     dut._log.info(f"threshold correct at {len(seen)} trim points, "
                   f"thr={thr} range [{thr - 256}, {thr + 252}]")
 
-@cocotb.test(skip=true)
+@cocotb.test(skip=True)
 async def test_band_dynamic_range(dut):
     
     """A quiet-to-loud ramp, bit-exact, spanning the log encoder's range.
@@ -870,7 +870,7 @@ async def test_band_dynamic_range(dut):
         f"ramp only spanned observable levels {lo}..{hi}; not exercising the encoder"
 
 
-@cocotb.test(skip=true)
+@cocotb.test(skip=True)
 async def test_unused_inputs_ignored(dut):
     
     """uio_in and ena change nothing: outputs identical, features bit-exact.
